@@ -2,8 +2,7 @@ use rand::seq::SliceRandom;
 use rand::thread_rng;
 use std::fmt;
 
-#[derive(Copy, Clone)]
-#[derive(PartialEq, Eq)] 
+#[derive(Copy, Clone, PartialEq, Eq)]
 pub enum Suit {
     Clubs,
     Hearts,
