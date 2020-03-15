@@ -9,7 +9,7 @@ use std::cmp::Reverse;
 // (e.g. multi-way straights, etc.)
 
 // We want HandType to be a thing that can be copied, not moved
-// i.e. ht1 = ht2 means that both ht1 and ht2 remain valid.
+// i.e. ht1 = ht2 is a copy and means that both ht1 and ht2 remain valid.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum HandType {
     StraightFlush,
@@ -87,24 +87,21 @@ fn get_hand_type_level_and_score(cards: &Vec<&Card>) -> (HandType, u8, u64) {
     let (groupings, groupings_score) = get_groupings_and_score(cards);
 
     match (groupings.as_slice(), same_suit, straight_score) {
-        (_, true, Some(ss))     => (HandType::StraightFlush, 9, ss),
-        ([4, 1], _, _)          => (HandType::Quads, 8, groupings_score),
-        ([3, 2], _, _)          => (HandType::FullHouse, 7, groupings_score),
-        (_, true, _)            => (HandType::Flush, 6, groupings_score),
-        (_, _, Some(ss))        => (HandType::Straight, 5, ss),
-        ([3, 1, 1], _, _)       => (HandType::ThreeOfAKind, 4, groupings_score),
-        ([2, 2, 1], _, _)       => (HandType::TwoPair, 3, groupings_score),
-        ([2, 1, 1, 1], _, _)    => (HandType::Pair, 2, groupings_score),
-        ([1, 1, 1, 1, 1], _, _) => (HandType::HighCard, 1, groupings_score),
-        _                       => panic!("No valid hand type for hand!"),
+        ([1, 1, 1, 1, 1], true,  Some(ss))  => (HandType::StraightFlush, 9, ss),
+        ([4, 1],          false, None)      => (HandType::Quads, 8, groupings_score),
+        ([3, 2],          false, None)      => (HandType::FullHouse, 7, groupings_score),
+        ([1, 1, 1, 1, 1], true,  None)      => (HandType::Flush, 6, groupings_score),
+        ([1, 1, 1, 1, 1], false, Some(ss))  => (HandType::Straight, 5, ss),
+        ([3, 1, 1],       false, None)      => (HandType::ThreeOfAKind, 4, groupings_score),
+        ([2, 2, 1],       false, None)      => (HandType::TwoPair, 3, groupings_score),
+        ([2, 1, 1, 1],    false, None)      => (HandType::Pair, 2, groupings_score),
+        ([1, 1, 1, 1, 1], false, None)      => (HandType::HighCard, 1, groupings_score),
+        _                                   => panic!("No valid hand type for hand!"),
     }
 }
 
-type GroupingsAndScore = (Vec<u8>, u64);
-
-// todo - go over for clarity; make lazy?
-fn get_groupings_and_score(cards: &Vec<&Card>) -> GroupingsAndScore {
-    // generalized scoring function for non-straight hands
+fn get_groupings_and_score(cards: &Vec<&Card>) -> (Vec<u8>, u64) {
+    // generalized rank-grouping and scoring function for non-straight hands
     // sort the cards
     // group by (requires previous sort)
     // re-sort by group size, rank
@@ -126,10 +123,9 @@ fn get_groupings_and_score(cards: &Vec<&Card>) -> GroupingsAndScore {
         .iter()
         .map(|(size, _)| *size as u8)
         .collect();
+
     let ranks_iter = group_sizes_and_ranks.iter().map(|(_, rank)| *rank as u64);
-
     let powers_iter = (0..5).rev().map(|n| BASE.pow(n));
-
     let score: u64 = ranks_iter
         .zip(powers_iter)
         .map(|(rank, power)| rank * power)
