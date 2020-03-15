@@ -80,22 +80,23 @@ impl<'a> Hand<'a> {
     }
 }
 
+#[rustfmt::skip]
 fn get_hand_type_level_and_score(cards: &Vec<&Card>) -> (HandType, u8, u64) {
     let same_suit = same_suit(cards);
     let straight_score = straight_score(cards);
     let (groupings, groupings_score) = get_groupings_and_score(cards);
 
     match (groupings.as_slice(), same_suit, straight_score) {
-        (_, true, Some(ss)) => (HandType::StraightFlush, 9, ss),
-        ([4, 1], _, _) => (HandType::Quads, 8, groupings_score),
-        ([3, 2], _, _) => (HandType::FullHouse, 7, groupings_score),
-        (_, true, _) => (HandType::Flush, 6, groupings_score),
-        (_, _, Some(ss)) => (HandType::Straight, 5, ss),
-        ([3, 1, 1], _, _) => (HandType::ThreeOfAKind, 4, groupings_score),
-        ([2, 2, 1], _, _) => (HandType::TwoPair, 3, groupings_score),
-        ([2, 1, 1, 1], _, _) => (HandType::Pair, 2, groupings_score),
+        (_, true, Some(ss))     => (HandType::StraightFlush, 9, ss),
+        ([4, 1], _, _)          => (HandType::Quads, 8, groupings_score),
+        ([3, 2], _, _)          => (HandType::FullHouse, 7, groupings_score),
+        (_, true, _)            => (HandType::Flush, 6, groupings_score),
+        (_, _, Some(ss))        => (HandType::Straight, 5, ss),
+        ([3, 1, 1], _, _)       => (HandType::ThreeOfAKind, 4, groupings_score),
+        ([2, 2, 1], _, _)       => (HandType::TwoPair, 3, groupings_score),
+        ([2, 1, 1, 1], _, _)    => (HandType::Pair, 2, groupings_score),
         ([1, 1, 1, 1, 1], _, _) => (HandType::HighCard, 1, groupings_score),
-        _ => panic!("No valid hand type for hand!"),
+        _                       => panic!("No valid hand type for hand!"),
     }
 }
 
