@@ -85,30 +85,22 @@ impl<'a> Hand<'a> {
 }
 
 fn get_hand_type_level_and_score(cards: &Vec<&Card>) -> (HandType, u8, u64) {
-    // Q: is an array the best choice here?
-    // Q: level logic is kind of hacky
-    // Q: *hand_type is kind of weird (deref the enum), look into it
-    // Maybe this should all live on the enum?
-    const NUM_HAND_TYPES: usize = 9;  // todo: hacky, fix this
-    let hand_checkers: [(HandType, fn(&Vec<&Card>) -> Option<u64>); NUM_HAND_TYPES] = [
-        (HandType::StraightFlush, straight_flush_checker),
-        (HandType::Quads, quads_checker),
-        (HandType::FullHouse, full_house_checker),
-        (HandType::Flush, flush_checker),
-        (HandType::Straight, straight_checker),
-        (HandType::ThreeOfAKind, three_of_a_kind_checker),
-        (HandType::TwoPair, two_pair_checker),
-        (HandType::Pair, pair_checker),
-        (HandType::HighCard, high_card_checker),
-    ];
-    for (i, (hand_type, hand_checker)) in hand_checkers.iter().enumerate() {
-        let level = NUM_HAND_TYPES - i;
-        match hand_checker(cards) {
-            Some(score) => return (*hand_type, level as u8, score),
-            None => (),
-        }
+    let same_suit = same_suit(cards);
+    let straight_score = straight_score(cards);
+    let (groupings, groupings_score) = get_groupings_and_score(cards);
+
+    match (groupings.as_slice(), same_suit, straight_score) {
+        (_, true, Some(ss)) => (HandType::StraightFlush, 9, ss),
+        ([4, 1], _, _) => (HandType::Quads, 8, groupings_score),
+        ([3, 2], _, _) => (HandType::FullHouse, 7, groupings_score),
+        (_, true, _) => (HandType::Flush, 6, groupings_score),
+        (_, _, Some(ss)) => (HandType::Straight, 5, ss),
+        ([3, 1, 1], _, _) => (HandType::ThreeOfAKind, 4, groupings_score),
+        ([2, 2, 1], _, _) => (HandType::TwoPair, 3, groupings_score),
+        ([2, 1, 1, 1], _, _) => (HandType::Pair, 2, groupings_score),
+        ([1, 1, 1, 1, 1], _, _) => (HandType::HighCard, 1, groupings_score),
+        _ => panic!("No valid hand type for hand!"),
     }
-    panic!("Should always have a hand type");
 }
 
 type GroupingsAndScore = (Vec<u8>, u64);
@@ -148,7 +140,7 @@ fn get_groupings_and_score(cards: &Vec<&Card>) -> GroupingsAndScore {
     (group_sizes, score)
 }
 
-fn _same_suit(cards: &Vec<&Card>) -> bool {
+fn same_suit(cards: &Vec<&Card>) -> bool {
     let first_suit = cards[0].suit;
     match cards.iter().take_while(|card| card.suit == first_suit).count() {
         5 => true,
@@ -156,7 +148,7 @@ fn _same_suit(cards: &Vec<&Card>) -> bool {
     }
 }
 
-fn _straight_score(cards: &Vec<&Card>) -> Option<u64> {
+fn straight_score(cards: &Vec<&Card>) -> Option<u64> {
     // special scoring function for straights or straight flushes
     // the score is the rank of the low card of the straight
     let mut ordered_ranks: Vec<u8> = cards.iter().map(|card| card.rank).collect();
@@ -172,94 +164,6 @@ fn _straight_score(cards: &Vec<&Card>) -> Option<u64> {
         return Some(lowest as u64)
     }
     None
-}
-
-fn straight_flush_checker(cards: &Vec<&Card>) -> Option<u64> {
-    match _same_suit(cards) {
-        true => _straight_score(cards),
-        false => None,
-    }
-}
-
-fn quads_checker(cards: &Vec<&Card>) -> Option<u64> {
-    let (group_sizes, score) = get_groupings_and_score(cards);
-    match group_sizes.as_slice() {
-        [4, 1] => Some(score),
-        _ => None,
-    }
-}
-
-fn full_house_checker(cards: &Vec<&Card>) -> Option<u64> {
-    let (group_sizes, score) = get_groupings_and_score(cards);
-    match group_sizes.as_slice() {
-        [3, 2] => Some(score),
-        _ => None,
-    }
-}
-
-fn flush_checker(cards: &Vec<&Card>) -> Option<u64> {
-    match _same_suit(cards) {
-        true => Some(get_groupings_and_score(cards).1),
-        false => None,
-    }
-}
-
-fn straight_checker(cards: &Vec<&Card>) -> Option<u64> {
-    _straight_score(cards)
-}
-
-fn three_of_a_kind_checker(cards: &Vec<&Card>) -> Option<u64> {
-    let (group_sizes, score) = get_groupings_and_score(cards);
-    match group_sizes.as_slice() {
-        [3, 1, 1] => Some(score),
-        _ => None,
-    }
-}
-
-fn two_pair_checker(cards: &Vec<&Card>) -> Option<u64> {
-    let (group_sizes, score) = get_groupings_and_score(cards);
-    match group_sizes.as_slice() {
-        [2, 2, 1] => Some(score),
-        _ => None,
-    }
-}
-
-fn pair_checker(cards: &Vec<&Card>) -> Option<u64> {
-    let (group_sizes, score) = get_groupings_and_score(cards);
-    match group_sizes.as_slice() {
-        [2, 1, 1, 1] => Some(score),
-        _ => None,
-    }
-}
-
-fn high_card_checker(cards: &Vec<&Card>) -> Option<u64> {
-    let (group_sizes, score) = get_groupings_and_score(cards);
-    match group_sizes.as_slice() {
-        [1, 1, 1, 1, 1] => Some(score),
-        _ => None,
-    }
-}
-
-// A checker function factory seemed like a nice way to eliminate duplicated code, but I 
-// couldn't mix closures with fn pointers in my array. Maybe better as a macro?
-// Used the `move` keyword to force the closure to take ownership of groups_to_check
-// from the factory.
-// Could also make groups_to_check a slice, but then we'd need to add lifetimes and also,
-// it makes sense for the closure to own the value needed for comparison.
-#[allow(dead_code)]
-fn groups_checker_factory(
-    groups_to_check: Vec<u8>
-) -> Box<dyn Fn(&Vec<&Card>) -> Option<u64>> {
-    Box::new(
-        move |cards: &Vec<&Card>| {
-            let (groups, score) = get_groupings_and_score(cards);
-            if groups == groups_to_check {
-                Some(score)
-            } else {
-                None
-            }
-        }
-    )
 }
 
 
