@@ -1,4 +1,4 @@
-use crate::deck::Card;
+use crate::cards::Card;
 use itertools::Itertools;
 use std::cmp::Ordering;
 use std::cmp::Reverse;
@@ -67,6 +67,7 @@ impl<'a> Hand<'a> {
     }
 
     // todo: do printing better, impl Display instead
+    #[allow(dead_code)]
     pub fn print_hand(&self) {
         // Q - why do we need the & on &self below?
         for card in &self.cards {
