@@ -24,6 +24,7 @@ pub struct Game {
 
 impl Game {
     pub fn from_spec(spec: &GameSpec) -> Game {
+        // TODO: fix bug with order of dealing hole cards
         let mut cards_set: HashSet<Card> = HashSet::from_iter(Card::create_deck());
         let mut board = Vec::new();
         let mut hole_cards = Vec::new();
@@ -86,21 +87,19 @@ impl Game {
         // Hence the indirection of collecting the player numbers and then moving out
         let player_hands: Vec<Hand> = self.get_player_hands();
         let one_best_hand: &Hand = player_hands.iter().max().unwrap();
-        let winning_players: Vec<usize> = player_hands
+        let winning_players: HashSet<usize> = HashSet::from_iter(
+            player_hands
             .iter()
             .enumerate()
             .filter(|(_, hand)| hand == &one_best_hand)
             .map(|(player, _)| player)
-            .collect();
+        );
 
-        let mut winning_players_and_hands: Vec<(usize, Hand)> = Vec::new();
-        let mut player: usize = 0;
-        for hand in player_hands {
-            if winning_players.iter().any(|wp| wp == &player) {
-                winning_players_and_hands.push( (player, hand) );
-            }
-            player += 1;
-        }
+        let winning_players_and_hands: Vec<(usize, Hand)> = player_hands
+            .into_iter()
+            .enumerate()
+            .filter(|(player, _)| winning_players.contains(player))
+            .collect();
         winning_players_and_hands
     }
 
