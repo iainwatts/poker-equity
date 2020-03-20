@@ -9,11 +9,9 @@ use std::iter::FromIterator;
 // A GameSpec represents incomplete information about a game situation
 // which can be used to construct a Game by randomly filling in the 
 // unknown cards.
-// For example, we might have a spec with a known 3-card flop,
-// and one known set of hole cards (our own)
 pub struct GameSpec {
     pub board: Vec<Card>,
-    pub hole_cards: Vec<Option<(Card, Card)>>,
+    pub hole_cards: Vec<(Card, Card)>,
 }
 
 pub struct Game {
@@ -24,38 +22,26 @@ pub struct Game {
 
 impl Game {
     pub fn from_spec(spec: &GameSpec) -> Game {
-        // TODO: fix bug with order of dealing hole cards
         let mut cards_set: HashSet<Card> = HashSet::from_iter(Card::create_deck());
         let mut board = Vec::new();
         let mut hole_cards = Vec::new();
 
-        // Set up board we know
+        // Set up board
         for spec_card in &spec.board {
             let card = cards_set.take(&spec_card).unwrap();
             board.push(card);
         }
 
-        // Set up hole cards we know
-        for spec_player_hole_cards in &spec.hole_cards {
-            if let Some( (spec_card_1, spec_card_2) ) = spec_player_hole_cards {
-                let card_1 = cards_set.take(&spec_card_1).unwrap();
-                let card_2 = cards_set.take(&spec_card_2).unwrap();
-                hole_cards.push( (card_1, card_2) );
-            }
+        // Set up hole cards 
+        for (spec_card_1, spec_card_2) in &spec.hole_cards {
+            let card_1 = cards_set.take(&spec_card_1).unwrap();
+            let card_2 = cards_set.take(&spec_card_2).unwrap();
+            hole_cards.push( (card_1, card_2) );
         }
 
         // Put remaining cards into deck and shuffle
         let mut deck: Vec<Card> = cards_set.into_iter().collect();
         deck.shuffle(&mut thread_rng());
-
-        // Deal out unknown hole cards
-        for spec_player_hole_cards in &spec.hole_cards {
-            if let None = spec_player_hole_cards {
-                let card_1 = deck.pop().unwrap();
-                let card_2 = deck.pop().unwrap();
-                hole_cards.push( (card_1, card_2) );
-            }
-        }
 
         Game { 
             deck,
