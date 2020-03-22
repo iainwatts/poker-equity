@@ -1,7 +1,6 @@
 use crate::game::Game;
 use crate::game::GameSpec;
 
-
 const DEFAULT_NUM_SIMULATIONS: u64 = 100000;
 
 pub struct EquityResults {
@@ -10,8 +9,8 @@ pub struct EquityResults {
 }
 
 pub fn simulate_equity_from_game_spec(
-    game_spec: GameSpec, 
-    num_simulations: Option<u64>
+    game_spec: GameSpec,
+    num_simulations: Option<u64>,
 ) -> EquityResults {
     let num_simulations = match num_simulations {
         Some(num) => num,
@@ -42,5 +41,8 @@ pub fn simulate_equity_from_game_spec(
         .iter()
         .map(|&count| count as f64 / num_simulations as f64)
         .collect();
-    EquityResults { win_percentages, draw_percentages } 
+    EquityResults {
+        win_percentages,
+        draw_percentages,
+    }
 }

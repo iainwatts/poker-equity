@@ -7,7 +7,7 @@ use std::collections::HashSet;
 use std::iter::FromIterator;
 
 // A GameSpec represents incomplete information about a game situation
-// which can be used to construct a Game by randomly filling in the 
+// which can be used to construct a Game by randomly filling in the
 // unknown cards.
 pub struct GameSpec {
     pub board: Vec<Card>,
@@ -32,18 +32,18 @@ impl Game {
             board.push(card);
         }
 
-        // Set up hole cards 
+        // Set up hole cards
         for (spec_card_1, spec_card_2) in &spec.hole_cards {
             let card_1 = cards_set.take(&spec_card_1).unwrap();
             let card_2 = cards_set.take(&spec_card_2).unwrap();
-            hole_cards.push( (card_1, card_2) );
+            hole_cards.push((card_1, card_2));
         }
 
         // Put remaining cards into deck and shuffle
         let mut deck: Vec<Card> = cards_set.into_iter().collect();
         deck.shuffle(&mut thread_rng());
 
-        Game { 
+        Game {
             deck,
             board,
             hole_cards,
@@ -75,10 +75,10 @@ impl Game {
         let one_best_hand: &Hand = player_hands.iter().max().unwrap();
         let winning_players: HashSet<usize> = HashSet::from_iter(
             player_hands
-            .iter()
-            .enumerate()
-            .filter(|(_, hand)| hand == &one_best_hand)
-            .map(|(player, _)| player)
+                .iter()
+                .enumerate()
+                .filter(|(_, hand)| hand == &one_best_hand)
+                .map(|(player, _)| player),
         );
 
         let winning_players_and_hands: Vec<(usize, Hand)> = player_hands
@@ -89,10 +89,7 @@ impl Game {
         winning_players_and_hands
     }
 
-    fn get_scoring_hand_for_player<'a>(
-        &'a self, 
-        player_hole_cards: &'a (Card, Card)
-    ) -> Hand<'a> {
+    fn get_scoring_hand_for_player<'a>(&'a self, player_hole_cards: &'a (Card, Card)) -> Hand<'a> {
         let (hole_card_1, hole_card_2) = player_hole_cards;
         let mut all_cards: Vec<&Card> = Vec::new();
         all_cards.push(&hole_card_1);
